@@ -1,0 +1,114 @@
+create database autor
+use autor
+
+create table Authors (
+    Id int primary key identity,
+    Name nvarchar(50) not null,
+    Surname nvarchar(50) not null
+);
+
+create table Books (
+    Id int primary key identity,
+    Name nvarchar(50) not null check (LEN(Name) >= 2),
+  
+    PageCount int not null check (PageCount >= 10),
+    AuthorId int not null foreign key references Authors(Id)
+);
+
+
+insert into Authors (Name, Surname) values 
+('Xalid', 'Mamisov'),
+('Miri', 'Ismayilov');
+
+insert into Books (Name, AuthorId, PageCount) values 
+('Xalidinki', 1, 100), 
+('Mirninki', 2, 200);
+
+create view BooksAndAuthors 
+AS
+SELECT 
+    Books.Id,
+    Books.Name,
+    Books.PageCount,
+    (Authors.Name + ' ' + Authors.Surname) AS AuthorFullName
+FROM 
+    Books
+JOIN 
+    Authors ON Books.AuthorId = Authors.Id;
+
+CREATE PROCEDURE usp_SearchBooks
+    @Searchn nvarchar(50)
+AS
+BEGIN
+    SELECT 
+        Books.Id,
+        Books.Name,
+        Books.PageCount,
+        (Authors.Name + ' ' + Authors.Surname) AS AuthorFullName
+    from 
+        Books
+    Join 
+        Authors ON Books.AuthorId = Authors.Id
+    where 
+        Books.Name Like '%' + @Searchn + '%' 
+        OR (Authors.Name + ' ' + Authors.Surname) Like '%' + @Searchn + '%';
+END;
+
+
+create procedure usp_InsertAuthor
+    @Name nvarchar(50),
+    @Surname nvarchar(50)
+AS
+BEGIN
+    insert into Authors (Name, Surname)
+    values (@Name, @Surname);
+END;
+
+
+create procedure usp_UpdateAuthor
+    @Id int,
+    @Name nvarchar(50),
+    @Surname nvarchar(50)
+AS
+BEGIN
+    update Authors
+    set Name = @Name, Surname = @Surname
+    where Id = @Id;
+END;
+
+
+create procedure usp_DeleteAuthor
+    @Id int
+AS
+BEGIN
+    delete from Authors
+    where Id = @Id;
+END;
+
+create view Authorss 
+AS
+select 
+    Authors.Id,
+    (Authors.Name + ' ' + Authors.Surname) as FullName,
+    COUNT(Books.Id) AS BooksCount,
+    ISNULL(MAX(Books.PageCount), 0) as MaxPageCount
+from 
+    Authors
+left join
+    Books on Authors.Id = Books.AuthorId
+GROUP BY 
+    Authors.Id, Authors.Name, Authors.Surname;
+
+
+exec usp_SearchBooks @Searchn = 'Kitab';
+
+
+exec usp_InsertAuthor @Name = 'Emin', @Surname = 'Qobu';
+
+exec usp_UpdateAuthor @Id = 1, @Name = 'Xalid', @Surname = 'Silva';
+
+exec usp_DeleteAuthor @Id = 2;
+
+
+select * from BooksAndAuthors;
+select * from Authorss;
